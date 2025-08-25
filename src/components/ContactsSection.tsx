@@ -154,8 +154,8 @@ export function ContactsSection() {
                         {getStatusText(contact.status)}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">{contact.title}</p>
-                    <p className="text-sm text-muted-foreground mb-1">{contact.department}</p>
+                    {/* <p className="text-sm text-muted-foreground mb-1">{contact.title}</p> */}
+                    {/* <p className="text-sm text-muted-foreground mb-1">{contact.department}</p> */}
                     <div className="flex flex-col gap-1">
                       <p className="text-sm text-muted-foreground">{contact.email}</p>
                       <p className="text-sm text-muted-foreground">{contact.phone}</p>

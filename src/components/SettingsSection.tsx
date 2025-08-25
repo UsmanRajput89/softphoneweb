@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { User, Bell, Palette, Shield, HelpCircle, Camera } from "lucide-react"
+import { User, Bell, Shield, HelpCircle, Camera, Palette } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -8,6 +8,7 @@ import { Switch } from "./ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Separator } from "./ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { ThemeSwitcher } from "./ThemeSwitcher"
 
 export function SettingsSection() {
   const [status, setStatus] = useState("available")
@@ -124,6 +125,22 @@ export function SettingsSection() {
                 <Input id="department" defaultValue="Engineering" />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Theme */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="w-5 h-5" />
+              Appearance
+            </CardTitle>
+            <CardDescription>
+              Customize how the app looks on your device
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ThemeSwitcher />
           </CardContent>
         </Card>
 

@@ -1,11 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light" style="color-scheme: light;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Softphone UI</title>
+    <script>
+      // Check for saved theme preference or use system preference
+      const savedTheme = localStorage.getItem('theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+      
+      // Apply the theme class to the html element
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.documentElement.style.colorScheme = theme;
+      
+      // Add smooth transitions
+      const style = document.createElement('style');
+      style.textContent = `
+        * {
+          transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+      `;
+      document.head.appendChild(style);
+    </script>
   </head>
-  <body>
+  <body class="min-h-screen bg-background text-foreground">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
