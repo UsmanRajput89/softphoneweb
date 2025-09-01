@@ -134,7 +134,7 @@ export function DialerSection() {
       <div className="w-96 p-6 border-r border-border flex flex-col">
         {/* Number Display */}
         <div className="mb-8">
-          <div className="bg-input-background rounded-lg p-4 min-h-[60px] flex items-center">
+          <div className="light:bg-input-background rounded-lg p-4 min-h-[60px] flex items-center">
             <span className="text-2xl font-mono flex-1 text-center">
               {dialedNumber || "Enter number"}
             </span>
