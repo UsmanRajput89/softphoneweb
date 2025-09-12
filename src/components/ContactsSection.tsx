@@ -1,10 +1,13 @@
 import { useState } from "react"
-import { Search, Phone, MessageCircle, Video, Plus, MoreHorizontal } from "lucide-react"
+import { Search, Phone, MessageCircle, Video, Plus, MoreHorizontal, X, User, Mail, Building, Briefcase } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Badge } from "./ui/badge"
 import { ScrollArea } from "./ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Label } from "./ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +28,15 @@ interface Contact {
 
 export function ContactsSection() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [showAddContact, setShowAddContact] = useState(false)
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    department: "",
+    title: "",
+    status: "offline" as const
+  })
 
   const contacts: Contact[] = [
     {
@@ -76,6 +88,46 @@ export function ContactsSection() {
       status: "online",
       department: "HR",
       title: "HR Manager"
+    },
+    {
+      id: "6",
+      name: "Alex Turner",
+      email: "alex.turner@company.com",
+      phone: "+1 (555) 567-8901",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face",
+      status: "busy",
+      department: "Engineering",
+      title: "DevOps Engineer"
+    },
+    {
+      id: "7",
+      name: "Jessica Park",
+      email: "jessica.park@company.com",
+      phone: "+1 (555) 678-9012",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face",
+      status: "online",
+      department: "Design",
+      title: "Product Designer"
+    },
+    {
+      id: "8",
+      name: "Robert Kim",
+      email: "robert.kim@company.com",
+      phone: "+1 (555) 789-0123",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=40&h=40&fit=crop&crop=face",
+      status: "offline",
+      department: "Finance",
+      title: "Financial Analyst"
+    },
+    {
+      id: "9",
+      name: "Maria Garcia",
+      email: "maria.garcia@company.com",
+      phone: "+1 (555) 890-1234",
+      avatar: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=40&h=40&fit=crop&crop=face",
+      status: "online",
+      department: "Marketing",
+      title: "Content Manager"
     }
   ]
 
@@ -103,13 +155,40 @@ export function ContactsSection() {
     }
   }
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Here you would typically send the data to your backend
+    console.log('Adding contact:', formData)
+    
+    // Reset form and close modal
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      department: "",
+      title: "",
+      status: "offline"
+    })
+    setShowAddContact(false)
+    
+    // Show success message (you could use a toast library)
+    alert('Contact added successfully!')
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Contacts</h2>
-          <Button className="bg-blue-500 hover:bg-blue-600">
+          <Button 
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => setShowAddContact(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Contact
           </Button>
@@ -127,79 +206,252 @@ export function ContactsSection() {
         </div>
       </div>
 
-      {/* Contacts List */}
+      {/* Contacts Grid */}
       <ScrollArea className="flex-1">
-        <div className="p-4">
-          <div className="grid gap-4">
+        <div className="p-6">
+          {/* Responsive Grid: 1 col on mobile, 2 cols on tablet, 3 cols on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredContacts.map((contact) => (
               <div
                 key={contact.id}
-                className="p-4 rounded-lg border border-border hover:bg-accent transition-colors"
+                className="group p-4 rounded-xl border border-border hover:border-border/80 hover:shadow-md transition-all duration-200 bg-card hover:bg-card/80"
               >
-                <div className="flex items-center gap-4">
-                  {/* Avatar with status */}
+                {/* Header with Avatar and Status */}
+                <div className="flex items-center gap-3 mb-3">
                   <div className="relative">
-                    <Avatar className="w-14 h-14">
+                    <Avatar className="w-12 h-12">
                       <AvatarImage src={contact.avatar} />
-                      <AvatarFallback>{contact.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      <AvatarFallback className="text-sm font-medium">
+                        {contact.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
                     </Avatar>
-                    <div className={`absolute bottom-0 right-0 w-4 h-4 ${getStatusColor(contact.status)} border-2 border-background rounded-full`} />
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${getStatusColor(contact.status)} border-2 border-background rounded-full`} />
                   </div>
-
-                  {/* Contact Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{contact.name}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {getStatusText(contact.status)}
-                      </Badge>
-                    </div>
-                    {/* <p className="text-sm text-muted-foreground mb-1">{contact.title}</p> */}
-                    {/* <p className="text-sm text-muted-foreground mb-1">{contact.department}</p> */}
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm text-muted-foreground">{contact.email}</p>
-                      <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                    </div>
+                    <h3 className="font-semibold text-sm truncate">{contact.name}</h3>
+                    <Badge 
+                      variant={contact.status === 'online' ? 'default' : 'secondary'} 
+                      className="text-xs mt-1"
+                    >
+                      {getStatusText(contact.status)}
+                    </Badge>
                   </div>
+                </div>
 
-                  {/* Action Buttons */}
+                {/* Contact Details */}
+                <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Phone className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Video className="w-4 h-4" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit Contact</DropdownMenuItem>
-                        <DropdownMenuItem>Add to Favorites</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete Contact
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                      {contact.department}
+                    </span>
                   </div>
+                  <p className="text-xs text-muted-foreground line-clamp-1">{contact.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{contact.email}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{contact.phone}</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 h-8 text-xs"
+                    title="Call"
+                  >
+                    <Phone className="w-3 h-3 mr-1" />
+                    Call
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2"
+                    title="Message"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2"
+                    title="Video Call"
+                  >
+                    <Video className="w-3 h-3" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2"
+                        title="More Options"
+                      >
+                        <MoreHorizontal className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit Contact</DropdownMenuItem>
+                      <DropdownMenuItem>Add to Favorites</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">
+                        Delete Contact
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Empty State */}
           {filteredContacts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No contacts found</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                <Search className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No contacts found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery ? `No results for "${searchQuery}"` : "Your contact list is empty"}
+              </p>
+              {!searchQuery && (
+                <Button className="bg-blue-500 hover:bg-blue-600">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Contact
+                </Button>
+              )}
             </div>
           )}
         </div>
       </ScrollArea>
+
+      {/* Add Contact Modal */}
+      <Dialog open={showAddContact} onOpenChange={setShowAddContact}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Add New Contact
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="name"
+                  placeholder="Enter full name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Phone Field */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number *</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Department Field */}
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="department"
+                  placeholder="Enter department"
+                  value={formData.department}
+                  onChange={(e) => handleInputChange('department', e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Title Field */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Job Title</Label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="title"
+                  placeholder="Enter job title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Status Field */}
+            <div className="space-y-2">
+              <Label htmlFor="status">Initial Status</Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => handleInputChange('status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Available</SelectItem>
+                  <SelectItem value="busy">Busy</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowAddContact(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-blue-500 hover:bg-blue-600"
+                disabled={!formData.name || !formData.email || !formData.phone}
+              >
+                Add Contact
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
