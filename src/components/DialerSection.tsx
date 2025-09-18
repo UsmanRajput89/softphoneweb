@@ -3,7 +3,6 @@ import {
   Phone, 
   PhoneOff, 
   Clock, 
-  Video, 
   Mic, 
   MicOff, 
   Pause, 
@@ -11,7 +10,13 @@ import {
   PhoneForwarded, 
   Users, 
   Volume2, 
-  VolumeX
+  VolumeX,
+  Square,
+  Circle,
+  Maximize2,
+  Minimize2,
+  X,
+  Delete
 } from "lucide-react"
 import { Button } from "./ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
@@ -30,9 +35,10 @@ interface CallRecord {
 
 interface DialerSectionProps {
   showRecentCalls?: boolean
+  isGlobalDialer?: boolean
 }
 
-export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
+export function DialerSection({ showRecentCalls = true, isGlobalDialer = false }: DialerSectionProps) {
   const [dialedNumber, setDialedNumber] = useState("")
   const [isInCall, setIsInCall] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -40,6 +46,8 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
   const [showInCallDialer, setShowInCallDialer] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
   const [isSpeakerOn, setIsSpeakerOn] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isCallMinimized, setIsCallMinimized] = useState(false)
 
   const dialpadNumbers = [
     { number: "1", letters: "" },
@@ -102,6 +110,8 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
     setCallDuration(0)
     setIsOnHold(false)
     setShowInCallDialer(false)
+    setIsRecording(false)
+    setIsCallMinimized(false)
   }
 
   const formatCallDuration = (seconds: number) => {
@@ -162,9 +172,21 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
             event.preventDefault()
             setShowInCallDialer(!showInCallDialer)
             break
+          case 'r':
+            event.preventDefault()
+            setIsRecording(!isRecording)
+            break
+          case 'q':
+            event.preventDefault()
+            setIsCallMinimized(!isCallMinimized)
+            break
           case 'escape':
             event.preventDefault()
-            handleEndCall()
+            if (showInCallDialer) {
+              setShowInCallDialer(false)
+            } else {
+              handleEndCall()
+            }
             break
           default:
             // Handle DTMF tones when in-call dialer is open
@@ -210,13 +232,152 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isInCall, dialedNumber, isMuted, isOnHold, isSpeakerOn, showInCallDialer]) // Dependencies for keyboard shortcuts
+  }, [isInCall, dialedNumber, isMuted, isOnHold, isSpeakerOn, showInCallDialer, isRecording, isCallMinimized]) // Dependencies for keyboard shortcuts
 
   if (isInCall) {
+    // Minimized Call Interface - Always show as floating widget
+    if (isCallMinimized) {
+      return (
+        <>
+          {/* Show normal dialer interface if this is the main dialer section */}
+          {!isGlobalDialer && (
+            <div className="flex h-full flex-col sm:flex-row">
+              <div className={`p-4 sm:p-6 flex flex-col ${showRecentCalls ? 'sm:w-80 md:w-96 sm:border-r border-border' : 'w-full max-w-md mx-auto'}`}>
+                <div className="flex items-center justify-center flex-1">
+                  <div className="text-center">
+                    <div className="text-lg text-muted-foreground mb-4">Call is minimized</div>
+                    <Button 
+                      onClick={() => setIsCallMinimized(false)}
+                      className="gap-2"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Show Call
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {showRecentCalls && (
+                <div className="flex-1 flex flex-col">
+                  <div className="p-6 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <h2 className="text-xl font-semibold">Recent Calls</h2>
+                    </div>
+                  </div>
+                  <ScrollArea className="flex-1">
+                    <div className="p-4 space-y-2">
+                      {callHistory.map((call) => (
+                        <div
+                          key={call.id}
+                          className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent cursor-pointer"
+                        >
+                          <Avatar className="w-12 h-12">
+                            {call.avatar ? (
+                              <AvatarImage src={call.avatar} />
+                            ) : null}
+                            <AvatarFallback>
+                              {call.name === "Unknown" ? "?" : call.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{call.name}</h3>
+                              {call.type === 'incoming' && (
+                                <Phone className="w-4 h-4 text-green-500 rotate-180" />
+                              )}
+                              {call.type === 'outgoing' && (
+                                <Phone className="w-4 h-4 text-blue-500" />
+                              )}
+                              {call.type === 'missed' && (
+                                <Phone className="w-4 h-4 text-red-500" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{call.number}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{call.timestamp}</span>
+                              {call.duration && (
+                                <>
+                                  <span>•</span>
+                                  <span>{call.duration}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <Phone className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Floating Minimized Call Widget */}
+          <div className="fixed bottom-4 right-4 z-50">
+            <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl p-4 min-w-80 animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12">
+                <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=48&h=48&fit=crop&crop=face" />
+                <AvatarFallback>SW</AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">Sarah Wilson</h3>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant={isOnHold ? "secondary" : "default"} className="text-xs px-2 py-0">
+                    {isOnHold ? "Hold" : "Live"}
+                  </Badge>
+                  <span className="font-mono">{formatCallDuration(callDuration)}</span>
+                  {isRecording && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={isMuted ? "destructive" : "ghost"}
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={() => setIsMuted(!isMuted)}
+                  title={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={() => setIsCallMinimized(false)}
+                  title="Expand Call"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={handleEndCall}
+                  title="End Call"
+                >
+                  <PhoneOff className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </>
+      )
+    }
+
+    // Full-Screen Call Interface
     return (
       <div className="flex h-full bg-gradient-to-b from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
         {/* Main Call Interface */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Call Header */}
           <div className="flex flex-col items-center justify-center flex-1 p-8">
             <div className="text-center mb-8">
@@ -279,12 +440,13 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
               </Button>
 
               <Button
-                variant="secondary"
+                variant={isRecording ? "destructive" : "secondary"}
                 size="lg"
                 className="w-16 h-16 rounded-full"
-                title="Video Call"
+                onClick={() => setIsRecording(!isRecording)}
+                title={isRecording ? "Stop Recording" : "Start Recording"}
               >
-                <Video className="w-6 h-6" />
+                {isRecording ? <Square className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
               </Button>
             </div>
 
@@ -308,53 +470,88 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
                 <Users className="w-4 h-4" />
                 Merge
               </Button>
+
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setIsCallMinimized(true)}
+                title="Minimize Call (Q)"
+              >
+                <Minimize2 className="w-4 h-4" />
+                Minimize
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* In-Call Dialer - Reuse our existing dialer component */}
+        {/* In-Call Dialer - Bottom Sliding Panel */}
         {showInCallDialer && (
-          <div className="w-96 border-l border-border bg-card/50">
-            <div className="p-4 border-b border-border">
-              <h3 className="text-lg font-semibold">Send DTMF Tones</h3>
-              <p className="text-sm text-muted-foreground">Use dialer to send tones during call</p>
-            </div>
-            
-            <div className="p-6">
-              {/* Number Display for DTMF */}
-              <div className="mb-8">
-                <div className="bg-background rounded-lg p-4 min-h-[60px] flex items-center">
-                  <span className="text-2xl font-mono flex-1 text-center">
-                    {dialedNumber || "Enter digits..."}
-                  </span>
-                  {dialedNumber && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialedNumber(prev => prev.slice(0, -1))}
-                      className="ml-2"
-                    >
-                      ←
-                    </Button>
-                  )}
-                </div>
+          <>
+            {/* Overlay */}
+            <div 
+              className="fixed inset-0 bg-black/20 z-40 animate-in fade-in duration-300"
+              onClick={() => setShowInCallDialer(false)}
+            />
+            {/* Dialer Panel */}
+            <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border shadow-2xl z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="max-w-2xl mx-auto">
+              {/* Drag Handle */}
+              <div className="flex justify-center pt-2 pb-1">
+                <div className="w-12 h-1 bg-muted-foreground/30 rounded-full"></div>
               </div>
+              
+              <div className="p-4 border-b border-border flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold">Send DTMF Tones</h3>
+                  <p className="text-sm text-muted-foreground">Use dialer to send tones during call</p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowInCallDialer(false)}
+                  className="hover:bg-accent"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="p-6">
+                {/* Number Display for DTMF */}
+                <div className="mb-6">
+                  <div className="bg-muted rounded-lg p-4 min-h-[50px] flex items-center">
+                    <span className="text-xl font-mono flex-1 text-center">
+                      {dialedNumber || "Enter digits..."}
+                    </span>
+                    {dialedNumber && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDialedNumber(prev => prev.slice(0, -1))}
+                        className="ml-2"
+                      >
+                        <Delete className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
 
-              {/* Dialpad - Reuse existing */}
-              <div className="grid grid-cols-3 gap-4">
-                {dialpadNumbers.map((item) => (
-                  <Button
-                    key={item.number}
-                    variant="outline"
-                    className="h-16 flex flex-col items-center justify-center hover:bg-accent"
-                    onClick={() => handleInCallDialpadClick(item.number)}
-                  >
-                    <span className="text-xl font-semibold">{item.number}</span>
-                  </Button>
-                ))}
+                {/* Dialpad - Compact grid for bottom panel */}
+                <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                  {dialpadNumbers.map((item) => (
+                    <Button
+                      key={item.number}
+                      variant="outline"
+                      className="h-12 flex flex-col items-center justify-center hover:bg-accent"
+                      onClick={() => handleInCallDialpadClick(item.number)}
+                    >
+                      <span className="text-lg font-semibold">{item.number}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
     )
@@ -377,7 +574,7 @@ export function DialerSection({ showRecentCalls = true }: DialerSectionProps) {
                 onClick={handleBackspace}
                 className="ml-2"
               >
-                ←
+                <Delete className="w-4 h-4" />
               </Button>
             )}
           </div>

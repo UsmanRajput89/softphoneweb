@@ -1,21 +1,59 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {Sidebar} from "@/components/Sidebar"
 import {TopNavigation} from "@/components/TopNavigation"
 import { ChatSection } from "@/components/ChatSection"
-import {DialerSection} from "@/components/DialerSection"
+import {UnifiedDialer} from "@/components/UnifiedDialer"
 import {ContactsSection} from "@/components/ContactsSection"
+import { ContactHistory } from "@/components/ContactHistory"
 import {SettingsSection} from "@/components/SettingsSection"
 import { Login } from "@/components/Login"
 import { Register } from "@/components/Register"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CallProvider, useCall } from "@/contexts/CallContext"
+import { CallInterface } from "@/components/CallInterface"
 
-export default function App() {
+// Define types for contact history
+interface Contact {
+  id: string
+  name: string
+  email: string
+  phone: string
+  avatar: string
+  status: 'online' | 'busy' | 'offline'
+  department: string
+  title: string
+}
+
+interface CallRecord {
+  id: string
+  type: 'incoming' | 'outgoing' | 'missed'
+  duration: string
+  timestamp: string
+  date: string
+  isRecorded?: boolean
+  recordingUrl?: string
+  recordingDuration?: string
+}
+
+interface ContactHistoryData {
+  contactId: string
+  totalCalls: number
+  totalDuration: string
+  lastCall: string
+  callRecords: CallRecord[]
+}
+
+function AppContent() {
   const [activeSection, setActiveSection] = useState("chats")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [globalDialerOpen, setGlobalDialerOpen] = useState(false)
   const [sidebarHidden, setSidebarHidden] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authView, setAuthView] = useState<'login' | 'register'>('login')
+  const [showContactHistory, setShowContactHistory] = useState(false)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [selectedContactHistory, setSelectedContactHistory] = useState<ContactHistoryData | null>(null)
+  const { callState, setNavigationCallback, handleSectionChange } = useCall()
 
   const handleLogin = () => {
     setIsAuthenticated(true)
@@ -30,14 +68,61 @@ export default function App() {
     setAuthView('login')
   }
 
+  const handleShowContactHistory = (contact: Contact, history: ContactHistoryData) => {
+    setSelectedContact(contact)
+    setSelectedContactHistory(history)
+    setShowContactHistory(true)
+  }
+
+  const handleBackToContacts = () => {
+    setShowContactHistory(false)
+    setSelectedContact(null)
+    setSelectedContactHistory(null)
+  }
+
+  // Set up navigation callback for call context
+  useEffect(() => {
+    setNavigationCallback((action: string) => {
+      if (action === 'close-global-dialer') {
+        setGlobalDialerOpen(false)
+      } else {
+        setActiveSection(action)
+        setGlobalDialerOpen(false) // Close global dialer if open
+      }
+    })
+  }, [setNavigationCallback])
+
+  // Handle section changes for auto-minimize functionality
+  const handleSectionChangeWithAutoMinimize = (section: string) => {
+    handleSectionChange(section) // Auto-minimize/maximize logic
+    setActiveSection(section)
+    setSidebarHidden(true) // Auto-hide sidebar on mobile after selection
+  }
+
+  // Monitor activeSection changes for auto-minimize (handles all navigation methods)
+  useEffect(() => {
+    handleSectionChange(activeSection)
+  }, [activeSection, handleSectionChange])
+
   const renderActiveSection = () => {
+    // Show contact history if active
+    if (showContactHistory && selectedContact && selectedContactHistory) {
+      return (
+        <ContactHistory 
+          contact={selectedContact}
+          history={selectedContactHistory}
+          onBack={handleBackToContacts}
+        />
+      )
+    }
+
     switch (activeSection) {
       case "chats":
         return <ChatSection />
       case "dialer":
-        return <DialerSection />
+        return <UnifiedDialer />
       case "contacts":
-        return <ContactsSection />
+        return <ContactsSection onShowContactHistory={handleShowContactHistory} />
       case "settings":
         return <SettingsSection />
       default:
@@ -80,10 +165,7 @@ export default function App() {
       } fixed lg:static inset-y-0 left-0 z-50 lg:z-auto transition-transform duration-300 ease-in-out`}>
         <Sidebar 
           activeSection={activeSection} 
-          onSectionChange={(section) => {
-            setActiveSection(section)
-            setSidebarHidden(true) // Auto-hide sidebar on mobile after selection
-          }}
+          onSectionChange={handleSectionChangeWithAutoMinimize}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
@@ -118,10 +200,23 @@ export default function App() {
             <DialogTitle>Dialer</DialogTitle>
           </DialogHeader>
           <div className="h-[500px] sm:h-[600px] overflow-hidden">
-            <DialerSection showRecentCalls={false} />
+            <UnifiedDialer showRecentCalls={false} isGlobalDialer={true} />
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      
+      {/* Global Call Widget - Show minimized call when not on dialer section */}
+      {callState.isInCall && callState.isCallMinimized && activeSection !== 'dialer' && (
+        <CallInterface variant="minimized" />
+      )}
+      </div>
+  )
+}
+
+export default function App() {
+  return (
+    <CallProvider>
+      <AppContent />
+    </CallProvider>
   )
 }

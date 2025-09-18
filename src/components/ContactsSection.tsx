@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Search, Phone, MessageCircle, Video, Plus, MoreHorizontal, X, User, Mail, Building, Briefcase } from "lucide-react"
+import { Search, Phone, MessageCircle, Video, Plus, MoreHorizontal, X, User, Mail, Building, Briefcase, Info } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
@@ -26,7 +26,30 @@ interface Contact {
   title: string
 }
 
-export function ContactsSection() {
+interface CallRecord {
+  id: string
+  type: 'incoming' | 'outgoing' | 'missed'
+  duration: string
+  timestamp: string
+  date: string
+  isRecorded?: boolean
+  recordingUrl?: string
+  recordingDuration?: string
+}
+
+interface ContactHistory {
+  contactId: string
+  totalCalls: number
+  totalDuration: string
+  lastCall: string
+  callRecords: CallRecord[]
+}
+
+interface ContactsSectionProps {
+  onShowContactHistory?: (contact: Contact, history: ContactHistory) => void
+}
+
+export function ContactsSection({ onShowContactHistory }: ContactsSectionProps = {}) {
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddContact, setShowAddContact] = useState(false)
   const [formData, setFormData] = useState({
@@ -37,6 +60,124 @@ export function ContactsSection() {
     title: "",
     status: "offline" as const
   })
+
+  // Sample call history data
+  const contactHistories: ContactHistory[] = [
+    {
+      contactId: "1",
+      totalCalls: 12,
+      totalDuration: "2h 34m",
+      lastCall: "2 hours ago",
+      callRecords: [
+        { 
+          id: "1", 
+          type: "outgoing", 
+          duration: "15:32", 
+          timestamp: "10:30 AM", 
+          date: "Today",
+          isRecorded: true,
+          recordingUrl: "/recordings/dummy-voice.mp3",
+          recordingDuration: "15:32"
+        },
+        { 
+          id: "2", 
+          type: "incoming", 
+          duration: "8:45", 
+          timestamp: "2:15 PM", 
+          date: "Yesterday",
+          isRecorded: false
+        },
+        { 
+          id: "3", 
+          type: "missed", 
+          duration: "0:00", 
+          timestamp: "9:22 AM", 
+          date: "Yesterday",
+          isRecorded: false
+        },
+        { 
+          id: "4", 
+          type: "outgoing", 
+          duration: "22:18", 
+          timestamp: "4:45 PM", 
+          date: "Dec 16",
+          isRecorded: true,
+          recordingUrl: "/recordings/dummy-voice.mp3",
+          recordingDuration: "22:18"
+        },
+        { 
+          id: "5", 
+          type: "incoming", 
+          duration: "12:03", 
+          timestamp: "11:30 AM", 
+          date: "Dec 15",
+          isRecorded: true,
+          recordingUrl: "/recordings/dummy-voice.mp3",
+          recordingDuration: "12:03"
+        }
+      ]
+    },
+    {
+      contactId: "2",
+      totalCalls: 8,
+      totalDuration: "1h 12m",
+      lastCall: "1 day ago",
+      callRecords: [
+        { 
+          id: "6", 
+          type: "incoming", 
+          duration: "18:45", 
+          timestamp: "3:20 PM", 
+          date: "Yesterday",
+          isRecorded: true,
+          recordingUrl: "/recordings/dummy-voice.mp3",
+          recordingDuration: "18:45"
+        },
+        { 
+          id: "7", 
+          type: "outgoing", 
+          duration: "6:32", 
+          timestamp: "10:15 AM", 
+          date: "Dec 16",
+          isRecorded: false
+        },
+        { 
+          id: "8", 
+          type: "missed", 
+          duration: "0:00", 
+          timestamp: "2:45 PM", 
+          date: "Dec 15",
+          isRecorded: false
+        }
+      ]
+    },
+    {
+      contactId: "3",
+      totalCalls: 5,
+      totalDuration: "45m",
+      lastCall: "3 days ago",
+      callRecords: [
+        { 
+          id: "9", 
+          type: "outgoing", 
+          duration: "25:12", 
+          timestamp: "1:30 PM", 
+          date: "Dec 15",
+          isRecorded: false
+        },
+        { 
+          id: "10", 
+          type: "incoming", 
+          duration: "12:48", 
+          timestamp: "9:45 AM", 
+          date: "Dec 14",
+          isRecorded: true,
+          recordingUrl: "/recordings/dummy-voice.mp3",
+          recordingDuration: "12:48"
+        }
+      ]
+    }
+  ]
 
   const contacts: Contact[] = [
     {
@@ -179,6 +320,21 @@ export function ContactsSection() {
     alert('Contact added successfully!')
   }
 
+  const handleShowContactHistory = (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId)
+    if (!contact || !onShowContactHistory) return
+
+    const history = contactHistories.find(h => h.contactId === contactId) || {
+      contactId,
+      totalCalls: 0,
+      totalDuration: "0m",
+      lastCall: "Never",
+      callRecords: []
+    }
+
+    onShowContactHistory(contact, history)
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -276,6 +432,15 @@ export function ContactsSection() {
                     title="Video Call"
                   >
                     <Video className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2"
+                    title="Contact History"
+                    onClick={() => handleShowContactHistory(contact.id)}
+                  >
+                    <Info className="w-3 h-3" />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
